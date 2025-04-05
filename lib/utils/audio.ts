@@ -18,7 +18,7 @@ export const recordAndExport = (): Promise<Blob> => {
 
             setTimeout(() => {
                 recorder.stop();
-            }, 5000); // stop recording after 5 seconds
+            }, 10000); // stop recording after 10 seconds
 
         } catch (error) {
             console.error("Error accessing microphone:", error);   
