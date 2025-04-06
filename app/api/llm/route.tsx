@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
             { "number": 47, "status": "issue" }
           ],
           "summary_dentist": "Tooth 26 has occlusal caries. Composite placed on the buccal surface of tooth 14. Tooth 47 was extracted.",
-          "summary_patient": "We found a small cavity on one of your back teeth, placed a filling on another, and removed one tooth."
+          "summary_patient": "We found a small cavity on one of your back teeth, there is a filling on another, and one tooth was previously removed."
         }
         
         Status values must be one of:
