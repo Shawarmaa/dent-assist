@@ -37,7 +37,7 @@ export default function Home() {
     }
   };
 
-  const handleAnalyze = async () => {
+  const handleAnalyse = async () => {
     if (!transcript) {
       alert("Please record audio first to generate a transcript");
       return;
@@ -87,7 +87,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error("API error:", err);
-      setOutput("Failed to analyze transcript. Please try again.");
+      setOutput("Failed to analyse transcript. Please try again.");
     } finally {
       setAnalyzing(false);
     }
@@ -124,54 +124,97 @@ export default function Home() {
 
       <div className="mb-6">
         <button 
-          onClick={handleAnalyze} 
+          onClick={handleAnalyse} 
           disabled={analyzing || !transcript}
           className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded disabled:opacity-50"
         >
-          {analyzing ? "Analyzing..." : "Analyze Transcript"}
+          {analyzing ? "Analyzing..." : "Analyse Transcript"}
         </button>
       </div>
 
-      {output && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">💡 AI Analysis</h2>
-          <div className="p-4 bg-yellow-50 rounded border border-yellow-200">
-            <pre className="whitespace-pre-wrap">{output}</pre>
-          </div>
-        </div>
-      )}
 
-      {rawResponse && (
-        <div className="mb-6">
-          <h2 className="text-xl font-semibold mb-2">🔍 Raw API Response (Debug)</h2>
-          <div className="p-4 bg-gray-50 rounded border border-gray-200 text-sm">
-            <pre className="whitespace-pre-wrap overflow-auto max-h-[300px]">{rawResponse}</pre>
-          </div>
-        </div>
-      )}
+
+
+
 
       {visitLog.length > 0 && (
         <div className="mb-6">
           <h2 className="text-xl font-semibold mb-2">📋 Dental Procedures</h2>
-          <div className="overflow-x-auto">
-            <table className="min-w-full bg-white border border-gray-200">
-              <thead>
+          <div className="overflow-x-auto shadow-sm rounded-lg border border-gray-200">
+            <table className="min-w-full bg-white">
+              <thead className="bg-gray-50">
                 <tr>
-                  <th className="border-b px-4 py-2">Tooth</th>
-                  <th className="border-b px-4 py-2">Procedure</th>
-                  <th className="border-b px-4 py-2">Surface</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tooth #</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Procedure</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Surface</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-200">
                 {visitLog.map((entry, index) => (
-                  <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : ''}>
-                    <td className="border-b px-4 py-2">{entry.tooth}</td>
-                    <td className="border-b px-4 py-2">{entry.procedure}</td>
-                    <td className="border-b px-4 py-2">{entry.surface || 'N/A'}</td>
+                  <tr key={index} className="hover:bg-gray-50">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-800 font-medium">
+                        {entry.tooth}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                        entry.procedure === "extraction" ? "bg-red-100 text-red-800" :
+                        entry.procedure === "filling" ? "bg-green-100 text-green-800" :
+                        entry.procedure === "cavity" ? "bg-yellow-100 text-yellow-800" : 
+                        "bg-gray-100 text-gray-800"
+                      }`}>
+                        {entry.procedure}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      {entry.surface ? (
+                        <span className="px-2 py-1 rounded-md text-xs font-medium bg-gray-100">
+                          {entry.surface}
+                        </span>
+                      ) : (
+                        <span className="text-gray-400">N/A</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
+                      <button className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                        </svg>
+                        Edit
+                      </button>
+                      <button className="text-red-600 hover:text-red-900 transition-colors">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                        </svg>
+                        Delete
+                      </button>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+          
+          {/* Summary Stats */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-sm font-medium text-gray-500">Total Procedures</div>
+              <div className="mt-1 text-2xl font-semibold">{visitLog.length}</div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-sm font-medium text-gray-500">Primary Procedures</div>
+              <div className="mt-1 text-2xl font-semibold">
+                {new Set(visitLog.map(entry => entry.procedure)).size}
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
+              <div className="text-sm font-medium text-gray-500">Teeth Treated</div>
+              <div className="mt-1 text-2xl font-semibold">
+                {new Set(visitLog.map(entry => entry.tooth)).size}
+              </div>
+            </div>
           </div>
         </div>
       )}
