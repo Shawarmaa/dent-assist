@@ -64,6 +64,14 @@ export default function Solution() {
     }
   }, [selectedLanguage]);
 
+  // Add this effect to automatically generate speech for the original summary when it's first available
+  useEffect(() => {
+    if (summaryPatient && !patientAudioURL) {
+      // Generate speech for original summary when it first appears
+      loadVoicesForLanguage("en");
+    }
+  }, [summaryPatient]);
+
   // Clean up audio URL when component unmounts
   useEffect(() => {
     return () => {
@@ -190,10 +198,16 @@ export default function Solution() {
 
   // Handle language change and translation
   const handleTranslate = async (languageCode: string) => {
-    if (!summaryPatient || !languageCode || languageCode === "en") {
-      // Reset to original if English is selected or no language/summary
+    if (!summaryPatient || !languageCode) {
+      // Reset to original if no language/summary
       setTranslatedPatientSummary("");
       setSelectedLanguage(languageCode);
+      
+      // Clean up audio if exists
+      if (patientAudioURL) {
+        URL.revokeObjectURL(patientAudioURL);
+        setPatientAudioURL(null);
+      }
       return;
     }
 
@@ -201,6 +215,7 @@ export default function Solution() {
     setSelectedLanguage(languageCode);
     
     try {
+      // First get the translation
       const response = await fetch('/api/translate', {
         method: 'POST',
         headers: {
@@ -212,9 +227,12 @@ export default function Solution() {
         }),
       });
 
-      // Get the translation directly as text since the API returns plain text
+      // Get the translation directly as text
       const translatedText = await response.text();
       setTranslatedPatientSummary(translatedText);
+      
+      // Then automatically generate speech with the translated text
+      await loadVoicesForLanguage(languageCode);
       
     } catch (err) {
       console.error("API error:", err);
@@ -228,14 +246,41 @@ export default function Solution() {
   const loadVoicesForLanguage = async (locale: string) => {
     try {
       const availableVoices = await getVoices(locale || "en");
-      setVoices(availableVoices);
       
-      // Set the first voice as default if available
       if (availableVoices.length > 0) {
+        setVoices(availableVoices);
         setSelectedVoice(availableVoices[0].id);
+        
+        // Choose the appropriate text based on whether it's translated or original
+        const textToSpeak = locale !== "en" && translatedPatientSummary 
+          ? translatedPatientSummary 
+          : summaryPatient;
+          
+        if (textToSpeak) {
+          setSpeechLoading(true);
+          
+          // Clean up previous audio URL if it exists
+          if (patientAudioURL) {
+            URL.revokeObjectURL(patientAudioURL);
+            setPatientAudioURL(null);
+          }
+          
+          // Generate speech with the first available voice
+          const audioBlob = await textToSpeech(textToSpeak, {
+            locale: locale || "en",
+            voiceId: availableVoices[0].id,
+            speed: 1.0
+          });
+          
+          // Create a URL for the blob
+          const url = URL.createObjectURL(audioBlob);
+          setPatientAudioURL(url);
+          setSpeechLoading(false);
+        }
       }
     } catch (error) {
-      console.error("Error loading voices:", error);
+      console.error("Error with voices or speech generation:", error);
+      setSpeechLoading(false);
     }
   };
 
@@ -431,7 +476,7 @@ export default function Solution() {
                 className="border border-gray-300 rounded px-2 py-1 text-sm"
                 value={selectedLanguage}
                 onChange={(e) => handleTranslate(e.target.value)}
-                disabled={translating}
+                disabled={translating || speechLoading}
               >
                 <option value="">Original</option>
                 {languages.map((lang) => (
@@ -440,7 +485,7 @@ export default function Solution() {
                   </option>
                 ))}
               </select>
-              {translating && (
+              {(translating || speechLoading) && (
                 <div className="ml-2">
                   <svg className="animate-spin h-4 w-4 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
@@ -453,37 +498,11 @@ export default function Solution() {
           <div className="p-4 bg-green-50 rounded border border-green-200">
             {translatedPatientSummary || summaryPatient}
           </div>
-          {voices.length > 0 && (
-            <div className="mt-4">
-              <label htmlFor="voice-select" className="mr-2 text-sm text-gray-600">
-                Select Voice:
-              </label>
-              <select
-                id="voice-select"
-                className="border border-gray-300 rounded px-2 py-1 text-sm"
-                value={selectedVoice}
-                onChange={(e) => setSelectedVoice(e.target.value)}
-                disabled={speechLoading}
-              >
-                {voices.map((voice) => (
-                  <option key={voice.id} value={voice.id}>
-                    {voice.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleGenerateSpeech}
-                disabled={speechLoading}
-                className="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-              >
-                {speechLoading ? "Generating..." : "Generate Speech"}
-              </button>
-            </div>
-          )}
+          
+          {/* Just show the audio player when available */}
           {patientAudioURL && (
             <div className="mt-4">
-              <h2 className="text-xl font-semibold mb-2">🔊 Patient Audio</h2>
-              <audio controls src={patientAudioURL} className="w-full" />
+              <audio controls src={patientAudioURL} className="w-full"/>
             </div>
           )}
         </div>
