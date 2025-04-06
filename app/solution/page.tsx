@@ -103,6 +103,7 @@ export default function Solution() {
       });
 
       const data = await response.json();
+      console.log("LLM response:", data);
       
       // Store raw response for debugging
       setRawResponse(JSON.stringify(data, null, 2));
@@ -118,11 +119,30 @@ export default function Solution() {
             
             // Convert the "teeth" array to your VisitEntry format
             if (parsedData.teeth && Array.isArray(parsedData.teeth)) {
-              const logEntries = parsedData.teeth.map(tooth => ({
-                tooth: tooth.number,
-                procedure: tooth.status === "issue" ? "cavity" : tooth.status,
-                surface: null
-              }));
+              const logEntries = parsedData.teeth.map(tooth => {
+                let procedure = "n/a"; // Default fallback
+              
+                // Try to extract from `tooth.procedure` if present
+                if (tooth.procedure) {
+                  procedure = tooth.procedure.toLowerCase();
+                } else if (tooth.status) {
+                  const status = tooth.status.toLowerCase();
+                  if (status.includes("extract") || status === "extraction") {
+                    procedure = "extraction";
+                  } else if (status.includes("fill") || status === "filling") {
+                    procedure = "filling";
+                  } else {
+                    procedure = "cavity";
+                  }
+                }
+              
+                return {
+                  tooth: tooth.number,
+                  procedure,
+                  surface: tooth.surface || null,
+                };
+              });
+              console.log("Parsed log entries:", logEntries);
               setVisitLog(logEntries);
             } else {
               // Fallback to the old format if available

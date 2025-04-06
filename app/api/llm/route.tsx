@@ -31,29 +31,27 @@ export async function POST(request: NextRequest) {
         
         // Use the transcript in the prompt if provided
         const prompt = `
-        You are a dental assistant AI.
-        
-        Given the following transcript of a dentist speaking during a procedure, return a structured summary of tooth statuses in this exact JSON format:
-        
+        Return a JSON object with:
+        - teeth: array of affected teeth, each with:
+        - number (int)
+        - procedure (e.g., "filling", "extraction", "cavity")
+        - surface (optional)
+
+        Also return a short summary for the dentist and the patient.
+
+        Output format:
+
         {
-          "teeth": [
-            { "number": 26, "status": "issue" },
-            { "number": 14, "status": "treated" },
-            { "number": 47, "status": "issue" }
-          ],
-          "summary_dentist": "Tooth 26 has occlusal caries. Composite placed on the buccal surface of tooth 14. Tooth 47 was extracted.",
-          "summary_patient": "We found a small cavity on one of your back teeth, there is a filling on another, and one tooth was previously removed."
+        "teeth": [
+            { "number": 26, "procedure": "filling", "surface": "occlusal" },
+            { "number": 47, "procedure": "extraction" }
+        ],
+        "summary_dentist": "Filling on 26, extraction on 47.",
+        "summary_patient": "We fixed one tooth and removed another."
         }
-        
-        Status values must be one of:
-        - "healthy" (default, omit if not mentioned)
-        - "issue" (for cavity, extraction, concern)
-        - "treated" (for fillings, crowns, etc.)
-        
-        You must respond with ONLY the JSON object and absolutely nothing else. No markdown, no backticks, no code blocks.
-        The tooth numbers are as following:
-        1-8: upper right, 9-16: upper left, 17-24: lower left, 25-32: lower right.
-        Now process this transcript:
+
+        Transcript:
+        "{transcriptText}"
         "${transcript}"
         `;
         
