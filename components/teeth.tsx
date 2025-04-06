@@ -57,7 +57,7 @@ function ToothScene() {
 
         const mappedNumber = toothNameMap[child.name];
         if (mappedNumber) {
-          child.name = mappedNumber.toString(); // Rename mesh
+          child.name = mappedNumber.toString(); 
         }
 
         child.userData.originalColor = originalMaterial.color.clone();
@@ -114,6 +114,7 @@ function ToothScene() {
           </div>
         </Html>
       )}
+      
     </>
   ) : null;
 }
