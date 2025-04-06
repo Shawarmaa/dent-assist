@@ -1,6 +1,8 @@
 'use client';
 import Link from 'next/link';
 import { useState } from 'react'
+import { Button } from './ui/button';
+import { link } from 'fs';
 
 export default function HeroSection() {
     const [menuState, setMenuState] = useState(false)
@@ -68,9 +70,10 @@ export default function HeroSection() {
                         <div className="relative z-10 mx-auto max-w-2xl text-center">
                             <h1 className="text-title text-balance text-4xl font-semibold md:text-5xl lg:text-6xl">Revolutionizing Dental Care with AI</h1>
                             <p className="text-body mx-auto mt-8 max-w-2xl text-xl">Empowering dentists with cutting-edge AI tools to enhance patient care, streamline workflows, and achieve precision like never before.</p>
-                            <Link href="" className="btn variant-neutral sz-md mx-auto mt-8 w-fit">
-                                <span className="btn-label">Explore DentAssist AI</span>
-                            </Link>
+
+                            <Button asChild className=' sz-md mx-auto mt-8 w-fit'>
+                                <Link href="/solution">Solution</Link>
+                            </Button>
                         </div>
                     </div>
                 </section>
