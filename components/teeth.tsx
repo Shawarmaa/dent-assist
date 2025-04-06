@@ -5,6 +5,14 @@ import { OrbitControls, useGLTF, Html } from '@react-three/drei';
 import { Suspense, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
+interface TeethProps {
+  visitLog: {
+    tooth: number;
+    procedure: string;
+    surface: string | null;
+  }[];
+}
+
 const toothNameMap: { [key: string]: number } = {
   'ZBrushPolyMesh3D_Mandible_ll8_0': 32,
   'ZBrushPolyMesh3D1_Mandible_ll7_0': 31,
@@ -41,7 +49,8 @@ const toothNameMap: { [key: string]: number } = {
   'polySurface12_blinn20_0': 1,
 };
 
-function ToothScene() {
+function ToothScene({ visitLog }: { visitLog: TeethProps['visitLog'] }) {
+
   const { scene } = useGLTF('/models/permanent_dentition.glb');
   const [selectedTeeth, setSelectedTeeth] = useState<Set<string>>(new Set());
   const [hoveredToothName, setHoveredToothName] = useState<string | null>(null);
@@ -68,24 +77,76 @@ function ToothScene() {
     setClonedScene(clone);
   }, [scene]);
 
+  // useEffect(() => {
+  //   if (!clonedScene) return;
+  //   console.log("cheeeeesee!!!!")
+
+  //   clonedScene.traverse((child: any) => {
+  //     if (child.isMesh) {
+  //       const originalColor = child.userData.originalColor;
+  //       if (!originalColor) return;
+
+        
+
+  //       if (selectedTeeth.has(child.name)) {
+  //         child.material.color.set('orange');
+  //       } else if (child.name === hoveredToothName) {
+  //         child.material.color.set('skyblue');
+  //       } else {
+  //         child.material.color.set(originalColor);
+  //       }
+  //     }
+  //   })
+  // }, [selectedTeeth, hoveredToothName, clonedScene ,visitLog]);
+
   useEffect(() => {
     if (!clonedScene) return;
-
+  
+    console.log("cheeeeesee!!!!");
+  
+    // Map tooth name to its procedure from visitLog
+    const toothProcedureMap = new Map<string, string>();
+    if (Array.isArray(visitLog)) {
+      visitLog.forEach((entry) => {
+        if (entry.tooth && entry.procedure) {
+          toothProcedureMap.set(entry.tooth.toString(), entry.procedure);
+        }
+      });
+    }
+  
     clonedScene.traverse((child: any) => {
       if (child.isMesh) {
         const originalColor = child.userData.originalColor;
         if (!originalColor) return;
-
-        if (selectedTeeth.has(child.name)) {
-          child.material.color.set('orange');
-        } else if (child.name === hoveredToothName) {
-          child.material.color.set('skyblue');
+  
+        const toothName = child.name;
+  
+        if (toothProcedureMap.has(toothName)) {
+          // Color based on procedure
+          const procedure = toothProcedureMap.get(toothName);
+          switch (procedure) {
+            case "extraction":
+              child.material.color.set("#fca5a5"); // Tailwind bg-red-100
+              break;
+            case "filling":
+              child.material.color.set("#6ee7b7"); // Tailwind bg-green-100
+              break;
+            case "cavity":
+              child.material.color.set("#fde68a"); // Tailwind bg-yellow-100
+              break;
+            default:
+              child.material.color.set("gray");
+          }
+        } else if (selectedTeeth.has(toothName)) {
+          child.material.color.set("orange");
+        } else if (toothName === hoveredToothName) {
+          child.material.color.set("skyblue");
         } else {
-          child.material.color.set(originalColor);
+          child.material.color.copy(originalColor);
         }
       }
-    })
-  }, [selectedTeeth, hoveredToothName, clonedScene]);
+    });
+  }, [selectedTeeth, hoveredToothName, clonedScene, visitLog]);
 
   const handleClick = (e: any) => {
     e.stopPropagation();
@@ -134,7 +195,7 @@ function ToothScene() {
   ) : null;
 }
 
-export default function Teeth() {
+export default function Teeth({ visitLog }: TeethProps) {
   return (
     <main className="flex flex-col items-center p-4">
       <div className="w-full h-[600px]">
@@ -142,7 +203,7 @@ export default function Teeth() {
         <ambientLight intensity={0.8} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
         <Suspense fallback={null}>
-          <ToothScene />
+          <ToothScene visitLog={visitLog} />
         </Suspense>
         <OrbitControls 
           enableZoom={true} 
