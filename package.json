@@ -9,9 +9,14 @@
     "lint": "next lint"
   },
   "dependencies": {
+
     "@radix-ui/react-slot": "^1.1.2",
     "@react-three/drei": "^10.0.5",
     "@react-three/fiber": "^9.1.1",
+
+    "@neuphonic/neuphonic-js": "^0.7.1",
+    "@google/generative-ai": "^0.24.0",
+
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
