@@ -84,7 +84,7 @@ function ToothScene() {
           child.material.color.set(originalColor);
         }
       }
-    });
+    })
   }, [selectedTeeth, hoveredToothName, clonedScene]);
 
   const handleClick = (e: any) => {
@@ -93,11 +93,13 @@ function ToothScene() {
 
     setSelectedTeeth((prev) => {
       const newSet = new Set(prev);
-      newSet.has(tooth) ? newSet.delete(tooth) : newSet.add(tooth);
+      if (newSet.has(tooth)) {
+        newSet.delete(tooth);
+      } else {
+        newSet.add(tooth);
+      }
       return newSet;
     });
-
-    console.log('Selected teeth:', Array.from(selectedTeeth));
   };
 
   const handlePointerOver = (e: any) => {
