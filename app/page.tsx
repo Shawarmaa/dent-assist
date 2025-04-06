@@ -1,7 +1,7 @@
 'use client'
 
-import { useState } from "react";
-import { recordAndExport } from "@/lib/utils/audio";
+import { useState, useEffect } from "react";
+import { recordAndExport, stopRecording, isRecording } from "@/lib/utils/audio";
 import { transcribeAudio } from "@/lib/utils/stt";
 import Teeth from "@/components/teeth";
 
@@ -16,6 +16,7 @@ export default function Home() {
   const [transcript, setTranscript] = useState("");
   const [audioURL, setAudioURL] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [recording, setRecording] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [output, setOutput] = useState<string | null>(null);
   const [visitLog, setVisitLog] = useState<VisitEntry[]>([]);
@@ -23,19 +24,39 @@ export default function Home() {
   const [summaryPatient, setSummaryPatient] = useState("");
   const [rawResponse, setRawResponse] = useState("");
 
-  const handleRecord = async () => {
-    setLoading(true);
-    try {
-      const blob = await recordAndExport();
-      setAudioURL(URL.createObjectURL(blob));
+  // Check recording status periodically
+  useEffect(() => {
+    const checkRecordingStatus = () => {
+      setRecording(isRecording());
+    };
+    
+    const interval = setInterval(checkRecordingStatus, 500);
+    return () => clearInterval(interval);
+  }, []);
 
-      const text = await transcribeAudio(blob);
-      setTranscript(text);
-    } catch (err) {
+  const handleStartRecording = async () => {
+    setLoading(true);
+    setRecording(true);
+    recordAndExport().then(blob => {
+      setAudioURL(URL.createObjectURL(blob));
+      transcribeAudio(blob).then(text => {
+        setTranscript(text);
+        setLoading(false);
+      }).catch(err => {
+        console.error("Transcription error:", err);
+        setLoading(false);
+      });
+    }).catch(err => {
       console.error("Recording error:", err);
-    } finally {
       setLoading(false);
-    }
+      setRecording(false);
+    });
+  };
+
+  const handleStopRecording = () => {
+    stopRecording();
+    setRecording(false);
+    // Don't set loading to false yet as we're still processing
   };
 
   const handleAnalyse = async () => {
@@ -76,8 +97,6 @@ export default function Home() {
             setVisitLog(parsedData.log || []);
             setSummaryDentist(parsedData.summary_dentist || "");
             setSummaryPatient(parsedData.summary_patient || "");
-            
-                    
           } catch (error) {
             console.error("Error parsing LLM response:", error);
             // We don't need to set output here as we've already set it above
@@ -94,23 +113,38 @@ export default function Home() {
     }
   };
   
-
   return (
-
-    
     <main className="container mx-auto px-4 py-8 max-w-4xl">
       <h1 className="text-3xl font-bold mb-6">DentAssist AI</h1>
       <Teeth />
 
-
       <div className="mb-6">
-        <button 
-          onClick={handleRecord} 
-          disabled={loading}
-          className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-        >
-          {loading ? "Recording..." : "Start Recording"}
-        </button>
+        {!recording ? (
+          <button 
+            onClick={handleStartRecording} 
+            disabled={loading}
+            className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+          >
+            {loading ? "Processing..." : "Start Recording"}
+          </button>
+        ) : (
+          <button 
+            onClick={handleStopRecording}
+            className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded"
+          >
+            Stop Recording
+          </button>
+        )}
+        
+        {loading && !recording && (
+          <span className="ml-3 text-gray-600">
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 inline text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            Transcribing audio...
+          </span>
+        )}
       </div>
 
       {audioURL && (
@@ -136,11 +170,6 @@ export default function Home() {
           {analyzing ? "Analyzing..." : "Analyse Transcript"}
         </button>
       </div>
-
-
-
-
-
 
       {visitLog.length > 0 && (
         <div className="mb-6">
