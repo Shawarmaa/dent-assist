@@ -97,7 +97,12 @@ function ToothScene() {
     };
   
     return clonedScene ? (
-      <primitive object={clonedScene} onClick={handleClick} />
+      <primitive 
+        object={clonedScene} 
+        onClick={handleClick} 
+        position={[0, -2, 0]} 
+        rotation={[-Math.PI / 24, 0, 0]} 
+      />
     ) : null;
   }
 
@@ -105,13 +110,18 @@ export default function Teeth() {
   return (
     <main className="flex flex-col items-center p-4">
       <div className="w-full h-[600px]">
-        <Canvas camera={{ position: [0, 0, 5] }}>
-          <ambientLight intensity={0.5} />
+        <Canvas camera={{ position: [0, 1, 10], fov: 40}}>
+          <ambientLight intensity={0.8} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           <Suspense fallback={null}>
             <ToothScene />
           </Suspense>
-          <OrbitControls />
+          <OrbitControls 
+            enableZoom={true} 
+            minDistance={5}
+            maxDistance={8}
+            target={[0, -1, 0]} 
+          />
         </Canvas>
       </div>
     </main>
