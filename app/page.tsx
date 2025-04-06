@@ -23,6 +23,11 @@ export default function Home() {
   const [summaryDentist, setSummaryDentist] = useState("");
   const [summaryPatient, setSummaryPatient] = useState("");
   const [rawResponse, setRawResponse] = useState("");
+  const [editingEntry, setEditingEntry] = useState<(VisitEntry & {index: number}) | null>(null);
+  const [editToothNumber, setEditToothNumber] = useState("");
+  const [editProcedure, setEditProcedure] = useState("");
+  const [editSurface, setEditSurface] = useState("");
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Check recording status periodically
   useEffect(() => {
@@ -128,6 +133,35 @@ export default function Home() {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const handleEditClick = (entry: VisitEntry, index: number) => {
+    setEditingEntry({...entry, index});
+    setEditToothNumber(entry.tooth.toString());
+    setEditProcedure(entry.procedure);
+    setEditSurface(entry.surface || "");
+    setShowEditModal(true);
+  };
+
+  const handleDeleteClick = (index: number) => {
+    if (confirm("Are you sure you want to delete this procedure?")) {
+      setVisitLog(prevLog => prevLog.filter((_, i) => i !== index));
+    }
+  };
+
+  const handleSaveEdit = () => {
+    if (!editingEntry) return;
+    
+    const updatedVisitLog = [...visitLog];
+    updatedVisitLog[editingEntry.index] = {
+      tooth: parseInt(editToothNumber) || 0,
+      procedure: editProcedure,
+      surface: editSurface || null
+    };
+    
+    setVisitLog(updatedVisitLog);
+    setShowEditModal(false);
+    setEditingEntry(null);
   };
   
   return (
@@ -239,13 +273,19 @@ export default function Home() {
                       )}
                     </td>
                     <td className="px-4 py-3 whitespace-nowrap text-right text-sm font-medium">
-                      <button className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors">
+                      <button 
+                        onClick={() => handleEditClick(entry, index)}
+                        className="text-indigo-600 hover:text-indigo-900 mr-3 transition-colors"
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
                         </svg>
                         Edit
                       </button>
-                      <button className="text-red-600 hover:text-red-900 transition-colors">
+                      <button 
+                        onClick={() => handleDeleteClick(index)}
+                        className="text-red-600 hover:text-red-900 transition-colors"
+                      >
                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                         </svg>
@@ -303,6 +343,74 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-2">🔍 Debug: Raw Response</h2>
           <div className="p-4 bg-gray-100 rounded overflow-auto max-h-96">
             <pre>{rawResponse}</pre>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Modal */}
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-xl font-semibold mb-4">Edit Dental Procedure</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Tooth Number
+                </label>
+                <input
+                  type="number"
+                  value={editToothNumber}
+                  onChange={(e) => setEditToothNumber(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Procedure
+                </label>
+                <select
+                  value={editProcedure}
+                  onChange={(e) => setEditProcedure(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                >
+                  <option value="cavity">Cavity</option>
+                  <option value="filling">Filling</option>
+                  <option value="extraction">Extraction</option>
+                  <option value="cleaning">Cleaning</option>
+                  <option value="root canal">Root Canal</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Surface (optional)
+                </label>
+                <input
+                  type="text"
+                  value={editSurface}
+                  onChange={(e) => setEditSurface(e.target.value)}
+                  placeholder="e.g., Occlusal, Buccal, Lingual"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            </div>
+            
+            <div className="mt-6 flex justify-end space-x-3">
+              <button
+                onClick={() => setShowEditModal(false)}
+                className="px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+              >
+                Save Changes
+              </button>
+            </div>
           </div>
         </div>
       )}
