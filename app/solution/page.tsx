@@ -1,5 +1,6 @@
 'use client'
 
+import { textToSpeech, getVoices } from "@/lib/utils/tts-client";
 import { useState, useEffect } from "react";
 import { recordAndExport, stopRecording, isRecording } from "@/lib/utils/audio";
 import { transcribeAudio } from "@/lib/utils/stt";
@@ -26,6 +27,10 @@ export default function Solution() {
   const [translating, setTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("");
   const [output, setOutput] = useState("");
+  const [patientAudioURL, setPatientAudioURL] = useState<string | null>(null);
+  const [speechLoading, setSpeechLoading] = useState(false);
+  const [voices, setVoices] = useState<any[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<string>("");
 
   // Available languages for translation
   const languages = [
@@ -52,6 +57,22 @@ export default function Solution() {
     return () => clearInterval(interval);
   }, []);
 
+  // Load voices when language changes
+  useEffect(() => {
+    if (selectedLanguage) {
+      loadVoicesForLanguage(selectedLanguage);
+    }
+  }, [selectedLanguage]);
+
+  // Clean up audio URL when component unmounts
+  useEffect(() => {
+    return () => {
+      if (patientAudioURL) {
+        URL.revokeObjectURL(patientAudioURL);
+      }
+    };
+  }, [patientAudioURL]);
+  
   const handleStartRecording = async () => {
     setLoading(true);
     setRecording(true);
@@ -200,6 +221,52 @@ export default function Solution() {
       setTranslatedPatientSummary("");
     } finally {
       setTranslating(false);
+    }
+  };
+
+  // Load voices for a language
+  const loadVoicesForLanguage = async (locale: string) => {
+    try {
+      const availableVoices = await getVoices(locale || "en");
+      setVoices(availableVoices);
+      
+      // Set the first voice as default if available
+      if (availableVoices.length > 0) {
+        setSelectedVoice(availableVoices[0].id);
+      }
+    } catch (error) {
+      console.error("Error loading voices:", error);
+    }
+  };
+
+  // Generate speech
+  const handleGenerateSpeech = async () => {
+    const textToSpeak = translatedPatientSummary || summaryPatient;
+    if (!textToSpeak || !selectedVoice) return;
+    
+    setSpeechLoading(true);
+    
+    // Clean up previous audio URL if it exists
+    if (patientAudioURL) {
+      URL.revokeObjectURL(patientAudioURL);
+      setPatientAudioURL(null);
+    }
+    
+    try {
+      // Get the audio blob from our client utility
+      const audioBlob = await textToSpeech(textToSpeak, {
+        locale: selectedLanguage || "en",
+        voiceId: selectedVoice,
+        speed: 1.0
+      });
+      
+      // Create a URL for the blob
+      const url = URL.createObjectURL(audioBlob);
+      setPatientAudioURL(url);
+    } catch (error) {
+      console.error("Error generating speech:", error);
+    } finally {
+      setSpeechLoading(false);
     }
   };
 
@@ -386,6 +453,39 @@ export default function Solution() {
           <div className="p-4 bg-green-50 rounded border border-green-200">
             {translatedPatientSummary || summaryPatient}
           </div>
+          {voices.length > 0 && (
+            <div className="mt-4">
+              <label htmlFor="voice-select" className="mr-2 text-sm text-gray-600">
+                Select Voice:
+              </label>
+              <select
+                id="voice-select"
+                className="border border-gray-300 rounded px-2 py-1 text-sm"
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value)}
+                disabled={speechLoading}
+              >
+                {voices.map((voice) => (
+                  <option key={voice.id} value={voice.id}>
+                    {voice.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleGenerateSpeech}
+                disabled={speechLoading}
+                className="ml-2 bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+              >
+                {speechLoading ? "Generating..." : "Generate Speech"}
+              </button>
+            </div>
+          )}
+          {patientAudioURL && (
+            <div className="mt-4">
+              <h2 className="text-xl font-semibold mb-2">🔊 Patient Audio</h2>
+              <audio controls src={patientAudioURL} className="w-full" />
+            </div>
+          )}
         </div>
       )}
 
