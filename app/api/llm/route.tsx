@@ -51,7 +51,8 @@ export async function POST(request: NextRequest) {
         - "treated" (for fillings, crowns, etc.)
         
         You must respond with ONLY the JSON object and absolutely nothing else. No markdown, no backticks, no code blocks.
-        
+        The tooth numbers are as following:
+        1-8: upper right, 9-16: upper left, 17-24: lower left, 25-32: lower right.
         Now process this transcript:
         "${transcript}"
         `;
