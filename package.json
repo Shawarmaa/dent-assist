@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@neuphonic/neuphonic-js": "^0.7.1",
     "@google/generative-ai": "^0.24.0",
     "axios": "^1.8.4",
     "class-variance-authority": "^0.7.1",
