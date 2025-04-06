@@ -94,7 +94,20 @@ export default function Home() {
         if (data.response && typeof data.response === 'string' && data.response.trim().startsWith('{')) {
           try {
             const parsedData = JSON.parse(data.response);
-            setVisitLog(parsedData.log || []);
+            
+            // Convert the "teeth" array to your VisitEntry format
+            if (parsedData.teeth && Array.isArray(parsedData.teeth)) {
+              const logEntries = parsedData.teeth.map(tooth => ({
+                tooth: tooth.number,
+                procedure: tooth.status === "issue" ? "cavity" : tooth.status,
+                surface: null
+              }));
+              setVisitLog(logEntries);
+            } else {
+              // Fallback to the old format if available
+              setVisitLog(parsedData.log || []);
+            }
+            
             setSummaryDentist(parsedData.summary_dentist || "");
             setSummaryPatient(parsedData.summary_patient || "");
           } catch (error) {
@@ -267,6 +280,15 @@ export default function Home() {
           <h2 className="text-xl font-semibold mb-2">👤 For Patient</h2>
           <div className="p-4 bg-green-50 rounded border border-green-200">
             {summaryPatient}
+          </div>
+        </div>
+      )}
+
+      {rawResponse && (
+        <div className="mb-6">
+          <h2 className="text-xl font-semibold mb-2">🔍 Debug: Raw Response</h2>
+          <div className="p-4 bg-gray-100 rounded overflow-auto max-h-96">
+            <pre>{rawResponse}</pre>
           </div>
         </div>
       )}
