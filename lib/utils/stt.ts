@@ -1,7 +1,6 @@
 import axios from 'axios';
 
 const ASSEMBLYAI_API_KEY = process.env.NEXT_PUBLIC_ASSEMBLYAI_API_KEY || '';
-console.log("AssemblyAI API Key:", ASSEMBLYAI_API_KEY); // Log the API key for debugging
 
 export const transcribeAudio = async (audioBlob: Blob): Promise<string> => {
 

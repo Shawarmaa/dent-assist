@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { recordAndExport } from "@/lib/utils/audio";
 import { transcribeAudio } from "@/lib/utils/stt";
+import Teeth from "@/components/teeth";
 
 export default function Home() {
   const [transcript, setTranscript] = useState("");
@@ -26,6 +27,7 @@ export default function Home() {
   return (
     <main style={{ padding: "2rem", fontFamily: "sans-serif" }}>
       <h1>DentAssist AI</h1>
+      <Teeth />
 
       <button onClick={handleRecord} disabled={loading}>
         {loading ? "Recording..." : "Start Recording"}
