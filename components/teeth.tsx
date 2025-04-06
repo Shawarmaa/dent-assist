@@ -44,7 +44,8 @@ const toothNameMap: { [key: string]: number } = {
 function ToothScene() {
   const { scene } = useGLTF('/models/permanent_dentition.glb');
   const [selectedTeeth, setSelectedTeeth] = useState<Set<string>>(new Set());
-  const [hoveredTooth, setHoveredTooth] = useState<THREE.Object3D | null>(null);
+  const [hoveredToothName, setHoveredToothName] = useState<string | null>(null);
+  const [hoveredObject, setHoveredObject] = useState<THREE.Object3D | null>(null);
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
 
   useEffect(() => {
@@ -57,7 +58,7 @@ function ToothScene() {
 
         const mappedNumber = toothNameMap[child.name];
         if (mappedNumber) {
-          child.name = mappedNumber.toString(); 
+          child.name = mappedNumber.toString();
         }
 
         child.userData.originalColor = originalMaterial.color.clone();
@@ -72,14 +73,19 @@ function ToothScene() {
 
     clonedScene.traverse((child: any) => {
       if (child.isMesh) {
-        const isSelected = selectedTeeth.has(child.name);
         const originalColor = child.userData.originalColor;
-        if (originalColor) {
-          child.material.color.set(isSelected ? 'orange' : originalColor);
+        if (!originalColor) return;
+
+        if (selectedTeeth.has(child.name)) {
+          child.material.color.set('orange');
+        } else if (child.name === hoveredToothName) {
+          child.material.color.set('skyblue');
+        } else {
+          child.material.color.set(originalColor);
         }
       }
     });
-  }, [selectedTeeth, clonedScene]);
+  }, [selectedTeeth, hoveredToothName, clonedScene]);
 
   const handleClick = (e: any) => {
     e.stopPropagation();
@@ -87,11 +93,7 @@ function ToothScene() {
 
     setSelectedTeeth((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(tooth)) {
-        newSet.delete(tooth); // Deselect
-      } else {
-        newSet.add(tooth); // Select
-      }
+      newSet.has(tooth) ? newSet.delete(tooth) : newSet.add(tooth);
       return newSet;
     });
 
@@ -100,11 +102,13 @@ function ToothScene() {
 
   const handlePointerOver = (e: any) => {
     e.stopPropagation();
-    setHoveredTooth(e.object);
+    setHoveredToothName(e.object.name);
+    setHoveredObject(e.object);
   };
 
   const handlePointerOut = () => {
-    setHoveredTooth(null);
+    setHoveredToothName(null);
+    setHoveredObject(null);
   };
 
   return clonedScene ? (
@@ -112,15 +116,13 @@ function ToothScene() {
       <primitive
         object={clonedScene}
         onClick={handleClick}
-        position={[0, -2, 0]} 
-        rotation={[-Math.PI / 24, 0, 0]} 
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       />
-      {hoveredTooth && (
-        <Html position={hoveredTooth.position}>
+      {hoveredObject && (
+        <Html position={hoveredObject.position}>
           <div className="bg-white text-black px-2 py-1 rounded shadow text-sm border border-gray-300">
-            Tooth {hoveredTooth.name}
+            Tooth {hoveredObject.name}
           </div>
         </Html>
       )}
@@ -131,20 +133,15 @@ function ToothScene() {
 export default function Teeth() {
   return (
     <main className="flex flex-col items-center p-4">
-      <div className="w-full h-[512px]">
-      <Canvas camera={{ position: [0, 1, 10], fov: 40}}>
-           <ambientLight intensity={0.8} />
-           <directionalLight position={[10, 10, 5]} intensity={1} />
-           <Suspense fallback={null}>
-             <ToothScene />
-           </Suspense>
-           <OrbitControls 
-             enableZoom={true} 
-             minDistance={5}
-             maxDistance={8}
-             target={[0, -1, 0]} 
-           />
-         </Canvas>
+      <div className="w-full h-[600px]">
+        <Canvas camera={{ position: [0, 0, 5] }}>
+          <ambientLight intensity={0.5} />
+          <directionalLight position={[10, 10, 5]} intensity={1} />
+          <Suspense fallback={null}>
+            <ToothScene />
+          </Suspense>
+          <OrbitControls />
+        </Canvas>
       </div>
     </main>
   );
