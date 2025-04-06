@@ -2,7 +2,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, useGLTF, Html } from '@react-three/drei';
-import { Suspense, useState, useEffect, useRef } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import * as THREE from 'three';
 
 const toothNameMap: { [key: string]: number } = {
@@ -57,7 +57,7 @@ function ToothScene() {
 
         const mappedNumber = toothNameMap[child.name];
         if (mappedNumber) {
-          child.name = mappedNumber.toString(); // Rename mesh
+          child.name = mappedNumber.toString(); 
         }
 
         child.userData.originalColor = originalMaterial.color.clone();
@@ -114,6 +114,7 @@ function ToothScene() {
           </div>
         </Html>
       )}
+      
     </>
   ) : null;
 }
