@@ -43,7 +43,7 @@ const toothNameMap: { [key: string]: number } = {
 
 function ToothScene() {
   const { scene } = useGLTF('/models/permanent_dentition.glb');
-  const [selectedTooth, setSelectedTooth] = useState<string | null>(null);
+  const [selectedTeeth, setSelectedTeeth] = useState<Set<string>>(new Set());
   const [hoveredTooth, setHoveredTooth] = useState<THREE.Object3D | null>(null);
   const [clonedScene, setClonedScene] = useState<THREE.Group | null>(null);
 
@@ -72,20 +72,30 @@ function ToothScene() {
 
     clonedScene.traverse((child: any) => {
       if (child.isMesh) {
-        const isSelected = child.name === selectedTooth;
+        const isSelected = selectedTeeth.has(child.name);
         const originalColor = child.userData.originalColor;
         if (originalColor) {
           child.material.color.set(isSelected ? 'orange' : originalColor);
         }
       }
     });
-  }, [selectedTooth, clonedScene]);
+  }, [selectedTeeth, clonedScene]);
 
   const handleClick = (e: any) => {
     e.stopPropagation();
-    const clickedTooth = e.object.name;
-    setSelectedTooth((prev) => (prev === clickedTooth ? null : clickedTooth));
-    console.log('Selected:', clickedTooth);
+    const tooth = e.object.name;
+
+    setSelectedTeeth((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(tooth)) {
+        newSet.delete(tooth); // Deselect
+      } else {
+        newSet.add(tooth); // Select
+      }
+      return newSet;
+    });
+
+    console.log('Selected teeth:', Array.from(selectedTeeth));
   };
 
   const handlePointerOver = (e: any) => {
@@ -102,8 +112,6 @@ function ToothScene() {
       <primitive
         object={clonedScene}
         onClick={handleClick}
-        position={[0, -2, 0]} 
-        rotation={[-Math.PI / 24, 0, 0]} 
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
       />
@@ -114,7 +122,6 @@ function ToothScene() {
           </div>
         </Html>
       )}
-      
     </>
   ) : null;
 }
@@ -122,20 +129,14 @@ function ToothScene() {
 export default function Teeth() {
   return (
     <main className="flex flex-col items-center p-4">
-      <h1 className="text-xl font-bold mb-2">Interactive Tooth Selector</h1>
-      <div className="w-full h-[600px]">
-        <Canvas camera={{ position: [0, 1, 10], fov: 40}}>
-          <ambientLight intensity={0.8} />
+      <div className="w-full h-[400px]">
+        <Canvas camera={{ position: [0, 0, 5] }}>
+          <ambientLight intensity={0.5} />
           <directionalLight position={[10, 10, 5]} intensity={1} />
           <Suspense fallback={null}>
             <ToothScene />
           </Suspense>
-          <OrbitControls 
-            enableZoom={true} 
-            minDistance={5}
-            maxDistance={8}
-            target={[0, -1, 0]} 
-          />
+          <OrbitControls />
         </Canvas>
       </div>
     </main>
