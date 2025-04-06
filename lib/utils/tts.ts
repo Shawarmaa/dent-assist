@@ -75,6 +75,7 @@ export async function textToSpeech(
     return wavData;
     
   } catch (error) {
+    
     console.error('Error performing text-to-speech:', error);
     throw error;
   }

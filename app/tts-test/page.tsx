@@ -36,6 +36,7 @@ export default function TtsTest() {
       if (availableVoices.length > 0 && !selectedVoice) {
         setSelectedVoice(availableVoices[0].id);
       }
+
     } catch (error) {
       console.error("Error loading voices:", error);
       setError("Failed to load voices. Please try again.");
@@ -55,6 +56,7 @@ export default function TtsTest() {
     }
     
     try {
+      
       // Get the audio blob from our client utility
       const audioBlob = await textToSpeech(message, {
         locale,
