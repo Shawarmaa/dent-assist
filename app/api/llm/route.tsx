@@ -32,32 +32,30 @@ export async function POST(request: NextRequest) {
         // Use the transcript in the prompt if provided
         const prompt = `
         You are a dental assistant AI.
-      
-        Given the following transcript of a dentist speaking during a procedure, extract:
-        1. A structured list of procedures in JSON format
-        2. A technical summary (for another dentist)
-        3. A simplified summary (for the patient)
-      
-        IMPORTANT: You must respond ONLY with valid JSON matching this exact structure:
+        
+        Given the following transcript of a dentist speaking during a procedure, return a structured summary of tooth statuses in this exact JSON format:
+        
         {
-          "log": [
-            { "tooth": 26, "procedure": "cavity", "surface": "occlusal" },
-            { "tooth": 14, "procedure": "filling", "surface": "buccal" },
-            { "tooth": 47, "procedure": "extraction", "surface": null }
+          "teeth": [
+            { "number": 26, "status": "issue" },
+            { "number": 14, "status": "treated" },
+            { "number": 47, "status": "issue" }
           ],
           "summary_dentist": "Tooth 26 has occlusal caries. Composite placed on the buccal surface of tooth 14. Tooth 47 was extracted.",
           "summary_patient": "We found a small cavity on one of your back teeth, placed a filling on another, and removed one tooth."
         }
-      
-        Only use these procedure types: "cavity", "filling", "extraction", "examination", "cleaning", "crown"
-        Surface values should be one of: "occlusal", "buccal", "lingual", "mesial", "distal", null
-      
+        
+        Status values must be one of:
+        - "healthy" (default, omit if not mentioned)
+        - "issue" (for cavity, extraction, concern)
+        - "treated" (for fillings, crowns, etc.)
+        
+        You must respond with ONLY the JSON object and absolutely nothing else. No markdown, no backticks, no code blocks.
+        
         Now process this transcript:
         "${transcript}"
-      
-        Remember, respond with ONLY the JSON object and absolutely nothing else - no markdown, no code blocks, no backticks.
-      `;
-
+        `;
+        
         
         const result: GenerateResponse = await geminiModel.generateContent(prompt);
         let responseText = result.response.text();
