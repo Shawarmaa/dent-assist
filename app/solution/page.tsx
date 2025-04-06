@@ -191,15 +191,10 @@ export default function Solution() {
         }),
       });
 
-      const data = await response.json();
+      // Get the translation directly as text since the API returns plain text
+      const translatedText = await response.text();
+      setTranslatedPatientSummary(translatedText);
       
-      if (data.translatedText) {
-        setTranslatedPatientSummary(data.translatedText);
-      } else if (data.error) {
-        console.error("Translation error:", data.error);
-        // Reset translation on error
-        setTranslatedPatientSummary("");
-      }
     } catch (err) {
       console.error("API error:", err);
       setTranslatedPatientSummary("");

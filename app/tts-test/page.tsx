@@ -11,6 +11,10 @@ export default function TtsTest() {
   const [loading, setLoading] = useState<boolean>(false);
   const [locale, setLocale] = useState<string>("en");
   const [error, setError] = useState<string | null>(null);
+  
+  // Add translation states
+  const [targetLanguage, setTargetLanguage] = useState<string>("es");
+  const [translating, setTranslating] = useState<boolean>(false);
 
   // Load voices on component mount
   useEffect(() => {
@@ -40,6 +44,41 @@ export default function TtsTest() {
     } catch (error) {
       console.error("Error loading voices:", error);
       setError("Failed to load voices. Please try again.");
+    }
+  };
+
+  // Add translation function
+  const handleTranslate = async () => {
+    if (!message) return;
+    
+    setTranslating(true);
+    setError(null);
+    
+    try {
+      const response = await fetch('/api/translate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          text: message, 
+          targetLanguage: targetLanguage 
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`Translation failed with status: ${response.status}`);
+      }
+      
+      const translatedText = await response.text();
+      setMessage(translatedText);
+      setLocale(targetLanguage);
+      
+    } catch (error) {
+      console.error("Error translating text:", error);
+      setError("Failed to translate text. Please try again.");
+    } finally {
+      setTranslating(false);
     }
   };
 
@@ -135,6 +174,45 @@ export default function TtsTest() {
           value={message}
           onChange={(e) => setMessage(e.target.value)}
         />
+      </div>
+      
+      {/* Add translation section */}
+      <div className="mb-6 p-4 border rounded bg-gray-50">
+        <h2 className="text-lg font-semibold mb-3">Translate Message</h2>
+        
+        <div className="flex items-end gap-4">
+          <div className="flex-grow">
+            <label className="block mb-2 text-sm font-medium">Target Language</label>
+            <select 
+              className="w-full p-2 border rounded"
+              value={targetLanguage}
+              onChange={(e) => setTargetLanguage(e.target.value)}
+            >
+              <option value="en">English</option>
+              <option value="fr">French</option>
+              <option value="es">Spanish</option>
+              <option value="nl">Dutch</option>
+              <option value="de">German</option>
+              <option value="hi">Hindi</option>
+              <option value="ar">Arabic</option>
+              <option value="zh">Chinese</option>
+              <option value="ja">Japanese</option>
+              <option value="pt">Portuguese</option>
+              <option value="ru">Russian</option>
+            </select>
+          </div>
+          
+          <button
+            className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 disabled:bg-gray-400"
+            onClick={handleTranslate}
+            disabled={translating || !message}
+          >
+            {translating ? "Translating..." : "Translate & Set"}
+          </button>
+        </div>
+        <p className="text-sm text-gray-500 mt-2">
+          This will translate your message and automatically update the language setting.
+        </p>
       </div>
       
       <button
