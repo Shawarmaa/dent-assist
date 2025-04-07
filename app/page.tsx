@@ -1,7 +1,7 @@
 'use client'
 
 import { textToSpeech, getVoices } from "@/lib/utils/tts-client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { recordAndExport, stopRecording, isRecording } from "@/lib/utils/audio";
 import { transcribeAudio } from "@/lib/utils/stt";
 import Teeth from "@/components/teeth";
@@ -13,6 +13,13 @@ interface VisitEntry {
   surface: string | null;
 }
 
+interface Tooth {
+  number: number;
+  procedure: string;
+  surface: string | null;
+  status?: string; // Added to handle the old format
+}
+
 export default function Home() {
   const [transcript, setTranscript] = useState("");
   const [audioURL, setAudioURL] = useState<string | null>(null);
@@ -22,15 +29,11 @@ export default function Home() {
   const [visitLog, setVisitLog] = useState<VisitEntry[]>([]);
   const [summaryDentist, setSummaryDentist] = useState("");
   const [summaryPatient, setSummaryPatient] = useState("");
-  const [rawResponse, setRawResponse] = useState("");
   const [translatedPatientSummary, setTranslatedPatientSummary] = useState("");
   const [translating, setTranslating] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("");
-  const [output, setOutput] = useState("");
   const [patientAudioURL, setPatientAudioURL] = useState<string | null>(null);
   const [speechLoading, setSpeechLoading] = useState(false);
-  const [voices, setVoices] = useState<any[]>([]);
-  const [selectedVoice, setSelectedVoice] = useState<string>("");
 
   // Available languages for translation
   const languages = [
@@ -47,6 +50,46 @@ export default function Home() {
     { code: "ru", name: "Russian" }
   ];
 
+  // Load voices for a language
+  const loadVoicesForLanguage = useCallback(async (locale: string) => {
+    try {
+      const availableVoices = await getVoices(locale || "en");
+      
+      if (availableVoices.length > 0) {
+        
+        // Choose the appropriate text based on whether it's translated or original
+        const textToSpeak = locale !== "en" && translatedPatientSummary 
+          ? translatedPatientSummary 
+          : summaryPatient;
+          
+        if (textToSpeak) {
+          setSpeechLoading(true);
+          
+          // Clean up previous audio URL if it exists
+          if (patientAudioURL) {
+            URL.revokeObjectURL(patientAudioURL);
+            setPatientAudioURL(null);
+          }
+          
+          // Generate speech with the first available voice
+          const audioBlob = await textToSpeech(textToSpeak, {
+            locale: locale || "en",
+            voiceId: availableVoices[0].id,
+            speed: 1.0
+          });
+          
+          // Create a URL for the blob
+          const url = URL.createObjectURL(audioBlob);
+          setPatientAudioURL(url);
+          setSpeechLoading(false);
+        }
+      }
+    } catch (error) {
+      console.error("Error with voices or speech generation:", error);
+      setSpeechLoading(false);
+    }
+  }, [translatedPatientSummary, summaryPatient, patientAudioURL]);
+
   // Check recording status periodically
   useEffect(() => {
     const checkRecordingStatus = () => {
@@ -62,7 +105,7 @@ export default function Home() {
     if (selectedLanguage) {
       loadVoicesForLanguage(selectedLanguage);
     }
-  }, [selectedLanguage]);
+  }, [selectedLanguage, loadVoicesForLanguage]);
 
   // Add this effect to automatically generate speech for the original summary when it's first available
   useEffect(() => {
@@ -70,7 +113,7 @@ export default function Home() {
       // Generate speech for original summary when it first appears
       loadVoicesForLanguage("en");
     }
-  }, [summaryPatient]);
+  }, [summaryPatient, patientAudioURL, loadVoicesForLanguage]);
 
   // Clean up audio URL when component unmounts
   useEffect(() => {
@@ -120,7 +163,6 @@ export default function Home() {
     setVisitLog([]);
     setSummaryDentist("");
     setSummaryPatient("");
-    setRawResponse("");
     
     try {
       const response = await fetch('/api/llm', {
@@ -134,12 +176,8 @@ export default function Home() {
       const data = await response.json();
       console.log("LLM response:", data);
       
-      // Store raw response for debugging
-      setRawResponse(JSON.stringify(data, null, 2));
       
       if (data.success) {
-        // Display the raw response text first
-        setOutput(data.response);
         
         // Try to parse the response if it seems to be JSON
         if (data.response && typeof data.response === 'string' && data.response.trim().startsWith('{')) {
@@ -148,8 +186,9 @@ export default function Home() {
             
             // Convert the "teeth" array to your VisitEntry format
             if (parsedData.teeth && Array.isArray(parsedData.teeth)) {
-              const logEntries = parsedData.teeth.map(tooth => {
+              const logEntries = parsedData.teeth.map((tooth: Tooth) => {
                 let procedure = "n/a"; // Default fallback
+                console.log("Tooth data:", tooth);
               
                 // Try to extract from `tooth.procedure` if present
                 if (tooth.procedure) {
@@ -186,11 +225,10 @@ export default function Home() {
           }
         }
       } else {
-        setOutput(`Error: ${data.error}`);
+        console.log("LLM error:", data.error);
       }
     } catch (err) {
       console.error("API error:", err);
-      setOutput("Failed to analyse transcript. Please try again.");
     } finally {
       setAnalyzing(false);
     }
@@ -242,78 +280,8 @@ export default function Home() {
     }
   };
 
-  // Load voices for a language
-  const loadVoicesForLanguage = async (locale: string) => {
-    try {
-      const availableVoices = await getVoices(locale || "en");
-      
-      if (availableVoices.length > 0) {
-        setVoices(availableVoices);
-        setSelectedVoice(availableVoices[0].id);
-        
-        // Choose the appropriate text based on whether it's translated or original
-        const textToSpeak = locale !== "en" && translatedPatientSummary 
-          ? translatedPatientSummary 
-          : summaryPatient;
-          
-        if (textToSpeak) {
-          setSpeechLoading(true);
-          
-          // Clean up previous audio URL if it exists
-          if (patientAudioURL) {
-            URL.revokeObjectURL(patientAudioURL);
-            setPatientAudioURL(null);
-          }
-          
-          // Generate speech with the first available voice
-          const audioBlob = await textToSpeech(textToSpeak, {
-            locale: locale || "en",
-            voiceId: availableVoices[0].id,
-            speed: 1.0
-          });
-          
-          // Create a URL for the blob
-          const url = URL.createObjectURL(audioBlob);
-          setPatientAudioURL(url);
-          setSpeechLoading(false);
-        }
-      }
-    } catch (error) {
-      console.error("Error with voices or speech generation:", error);
-      setSpeechLoading(false);
-    }
-  };
+  
 
-  // Generate speech
-  const handleGenerateSpeech = async () => {
-    const textToSpeak = translatedPatientSummary || summaryPatient;
-    if (!textToSpeak || !selectedVoice) return;
-    
-    setSpeechLoading(true);
-    
-    // Clean up previous audio URL if it exists
-    if (patientAudioURL) {
-      URL.revokeObjectURL(patientAudioURL);
-      setPatientAudioURL(null);
-    }
-    
-    try {
-      // Get the audio blob from our client utility
-      const audioBlob = await textToSpeech(textToSpeak, {
-        locale: selectedLanguage || "en",
-        voiceId: selectedVoice,
-        speed: 1.0
-      });
-      
-      // Create a URL for the blob
-      const url = URL.createObjectURL(audioBlob);
-      setPatientAudioURL(url);
-    } catch (error) {
-      console.error("Error generating speech:", error);
-    } finally {
-      setSpeechLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white">
