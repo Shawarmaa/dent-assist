@@ -6,6 +6,8 @@
 - 🥈 **2nd Overall**  
 - 🥈 **2nd Place** – Google Developer Group Challenge  
 
+🎥 **Watch the demo**: https://www.youtube.com/watch?v=0MH73DRd8A0
+
 ---
 
 ## ✨ Key Features
@@ -53,3 +55,30 @@
 
 ### Installation
 
+1. Clone the repository  
+   ```bash
+   git clone https://github.com/your-username/dentassist.git
+   cd dentassist
+   ```
+
+2. Install dependencies  
+   ```bash
+   npm install
+   ```
+
+3. Create a `.env.local` file in the root directory and add your API keys:  
+   ```
+   GEMINI_API_KEY=your-gemini-api-key
+   ASSEMBLYAI_API_KEY=your-assemblyai-key
+   NEUPHONIC_API_KEY=your-neuphonic-key
+   ```
+
+4. Start the development server  
+   ```bash
+   npm run dev
+   ```
+
+5. Open your browser and go to:  
+   ```
+   http://localhost:3000
+   ```
