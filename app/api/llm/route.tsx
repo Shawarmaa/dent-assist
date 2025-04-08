@@ -36,6 +36,8 @@ export async function POST(request: NextRequest) {
         - number (int)
         - procedure (e.g., "filling", "extraction", "cavity")
         - surface (optional)
+        - teeth numbers start from 1 to 32 top to bottom, right to left
+        - for instance if said remove all bottom teeth, teeth 17 to 32 will be given extraction
 
         Also return a short summary for the dentist and the patient.
 
